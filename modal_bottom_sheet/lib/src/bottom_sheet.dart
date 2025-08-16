@@ -349,10 +349,15 @@ class ModalBottomSheetState extends State<ModalBottomSheet>
   }
 
   @override
+  void dispose() {
+    _bounceDragController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final bounceAnimation = CurvedAnimation(
-      parent: _bounceDragController,
-      curve: Curves.easeOutSine,
+    final bounceAnimation = CurveTween(curve: Curves.easeOutSine).animate(
+      _bounceDragController,
     );
 
     var child = widget.child;
