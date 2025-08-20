@@ -7,10 +7,7 @@ import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 Future<T?> showMaterialModalBottomSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
-  Color? backgroundColor,
-  double? elevation,
-  ShapeBorder? shape,
-  Clip? clipBehavior,
+  bool enableAnimated = true,
   Color? barrierColor,
   bool bounce = false,
   bool expand = false,
@@ -29,14 +26,7 @@ Future<T?> showMaterialModalBottomSheet<T>({
       .push(ModalSheetRoute<T>(
     builder: builder,
     closeProgressThreshold: closeProgressThreshold,
-    containerBuilder: _materialContainerBuilder(
-      context,
-      backgroundColor: backgroundColor,
-      elevation: elevation,
-      shape: shape,
-      clipBehavior: clipBehavior,
-      theme: Theme.of(context),
-    ),
+    containerBuilder: _materialContainerBuilder(),
     secondAnimationController: secondAnimation,
     bounce: bounce,
     expanded: expand,
@@ -52,32 +42,7 @@ Future<T?> showMaterialModalBottomSheet<T>({
 }
 
 //Default container builder is the Material Appearance
-WidgetWithChildBuilder _materialContainerBuilder(BuildContext context,
-    {Color? backgroundColor,
-    double? elevation,
-    ThemeData? theme,
-    Clip? clipBehavior,
-    ShapeBorder? shape}) {
-  final bottomSheetTheme = Theme.of(context).bottomSheetTheme;
-  final color = backgroundColor ??
-      bottomSheetTheme.modalBackgroundColor ??
-      bottomSheetTheme.backgroundColor;
-  final effectiveElevation = elevation ?? bottomSheetTheme.elevation ?? 0.0;
-  final effectiveShape = shape ?? bottomSheetTheme.shape;
-  final effectiveClipBehavior =
-      clipBehavior ?? bottomSheetTheme.clipBehavior ?? Clip.none;
-
-  Widget result(context, animation, child) => Material(
-        color: color,
-        elevation: effectiveElevation,
-        shape: effectiveShape,
-        clipBehavior: effectiveClipBehavior,
-        child: child,
-      );
-  if (theme != null) {
-    return (context, animation, child) =>
-        Theme(data: theme, child: result(context, animation, child));
-  } else {
-    return result;
-  }
+WidgetWithChildBuilder _materialContainerBuilder() {
+  Widget result(context, animation, child) => child;
+  return result;
 }
