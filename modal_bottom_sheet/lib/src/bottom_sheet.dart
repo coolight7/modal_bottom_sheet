@@ -5,7 +5,6 @@
 import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:modal_bottom_sheet/src/utils/scroll_to_top_status_bar.dart';
 
 import 'package:modal_bottom_sheet/src/utils/bottom_sheet_suspended_curve.dart';
 
@@ -141,8 +140,6 @@ class ModalBottomSheetState extends State<ModalBottomSheet>
 
   ScrollController get _scrollController => widget.scrollController;
 
-  late AnimationController _bounceDragController;
-
   double? get _childHeight {
     final childContext = _childKey.currentContext;
     final renderBox = childContext?.findRenderObject() as RenderBox;
@@ -169,14 +166,18 @@ class ModalBottomSheetState extends State<ModalBottomSheet>
   }
 
   void _cancelClose() {
-    widget.animationController.forward().then((value) {
+    widget.animationController
+        .animateTo(1,
+            curve: Curves.easeOut,
+            duration: widget.animationController.duration ??
+                const Duration(milliseconds: 500))
+        .then((value) {
       // When using WillPop, animation doesn't end at 1.
       // Check more in detail the problem
       if (!widget.animationController.isCompleted) {
         widget.animationController.value = 1;
       }
     });
-    _bounceDragController.reverse();
   }
 
   bool _isCheckingShouldClose = false;
@@ -212,15 +213,6 @@ class ModalBottomSheetState extends State<ModalBottomSheet>
       }
     }
 
-    // Bounce top
-    final bounce = widget.bounce == true;
-    final shouldBounce = _bounceDragController.value > 0;
-    final isBouncing = (widget.animationController.value - progress) > 1;
-    if (bounce && (shouldBounce || isBouncing)) {
-      _bounceDragController.value -= progress * 10;
-      return;
-    }
-
     widget.animationController.value -= progress;
   }
 
@@ -234,7 +226,6 @@ class ModalBottomSheetState extends State<ModalBottomSheet>
 
     if (_dismissUnderway || !isDragging) return;
     isDragging = false;
-    _bounceDragController.reverse();
 
     Future<void> tryClose() async {
       if (widget.shouldClose != null) {
@@ -341,25 +332,12 @@ class ModalBottomSheetState extends State<ModalBottomSheet>
   @override
   void initState() {
     animationCurve = _defaultCurve;
-    _bounceDragController =
-        AnimationController(vsync: this, duration: Duration(milliseconds: 300));
-
     // Todo: Check if we can remove scroll Controller
     super.initState();
   }
 
   @override
-  void dispose() {
-    _bounceDragController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final bounceAnimation = CurveTween(curve: Curves.easeOutSine).animate(
-      _bounceDragController,
-    );
-
     var child = widget.child;
     if (widget.containerBuilder != null) {
       child = widget.containerBuilder!(
@@ -381,25 +359,19 @@ class ModalBottomSheetState extends State<ModalBottomSheet>
             ? child
             : KeyedSubtree(
                 key: _childKey,
-                child: AnimatedBuilder(
-                  animation: bounceAnimation,
-                  builder: (context, _) => CustomSingleChildLayout(
-                    delegate: _CustomBottomSheetLayout(bounceAnimation.value),
-                    child: GestureDetector(
-                      onVerticalDragUpdate: (details) {
-                        _handleDragUpdate(details.delta.dy);
-                      },
-                      onVerticalDragEnd: (details) {
-                        _handleDragEnd(details.primaryVelocity ?? 0);
-                      },
-                      child: NotificationListener<ScrollNotification>(
-                        onNotification: (ScrollNotification notification) {
-                          _handleScrollUpdate(notification);
-                          return false;
-                        },
-                        child: child!,
-                      ),
-                    ),
+                child: GestureDetector(
+                  onVerticalDragUpdate: (details) {
+                    _handleDragUpdate(details.delta.dy);
+                  },
+                  onVerticalDragEnd: (details) {
+                    _handleDragEnd(details.primaryVelocity ?? 0);
+                  },
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: (ScrollNotification notification) {
+                      _handleScrollUpdate(notification);
+                      return false;
+                    },
+                    child: child!,
                   ),
                 ),
               );
@@ -415,17 +387,7 @@ class ModalBottomSheetState extends State<ModalBottomSheet>
       },
       child: RepaintBoundary(child: child),
     );
-
-    return StatusBarGestureDetector(
-      child: child,
-      onTap: (context) {
-        _scrollController.animateTo(
-          0.0,
-          duration: const Duration(milliseconds: 1000),
-          curve: Curves.easeOutCirc,
-        );
-      },
-    );
+    return child;
   }
 }
 

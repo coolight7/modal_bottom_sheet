@@ -31,24 +31,6 @@ class _ModalBottomSheet<T> extends StatefulWidget {
 }
 
 class _ModalBottomSheetState<T> extends State<_ModalBottomSheet<T>> {
-  String _getRouteLabel() {
-    final platform = Theme.of(context).platform; //?? defaultTargetPlatform;
-    switch (platform) {
-      case TargetPlatform.iOS:
-      case TargetPlatform.linux:
-      case TargetPlatform.macOS:
-      case TargetPlatform.windows:
-        return '';
-      case TargetPlatform.android:
-      case TargetPlatform.fuchsia:
-        if (Localizations.of(context, MaterialLocalizations) != null) {
-          return MaterialLocalizations.of(context).dialogLabel;
-        } else {
-          return DefaultMaterialLocalizations().dialogLabel;
-        }
-    }
-  }
-
   ScrollController? _scrollController;
 
   @override
@@ -77,21 +59,10 @@ class _ModalBottomSheetState<T> extends State<_ModalBottomSheet<T>> {
     assert(widget.route._animationController != null);
     final scrollController = PrimaryScrollController.maybeOf(context) ??
         (_scrollController ??= ScrollController());
-    return ModalScrollController(
+    final content = ModalScrollController(
       controller: scrollController,
       child: Builder(
-        builder: (context) => AnimatedBuilder(
-          animation: widget.route._animationController!,
-          builder: (BuildContext context, final Widget? child) {
-            assert(child != null);
-            // Disable the initial animation when accessible navigation is on so
-            // that the semantics are added to the tree at the correct time.
-            return Semantics(
-              scopesRoute: true,
-              namesRoute: true,
-              label: _getRouteLabel(),
-              explicitChildNodes: true,
-              child: ModalBottomSheet(
+          builder: (context) => ModalBottomSheet(
                 closeProgressThreshold: widget.closeProgressThreshold,
                 expanded: widget.route.expanded,
                 containerBuilder: widget.route.containerBuilder,
@@ -118,22 +89,19 @@ class _ModalBottomSheetState<T> extends State<_ModalBottomSheet<T>> {
                     Navigator.of(context).pop();
                   }
                 },
-                child: child!,
+                child: widget.route.builder(context),
                 enableDrag: widget.enableDrag,
                 bounce: widget.bounce,
                 scrollController: scrollController,
-                animationCurve: widget.animationCurve,
-              ),
-            );
-          },
-          child: widget.route.builder(context),
-        ),
-      ),
+              )),
     );
+    return content;
   }
 }
 
 class ModalSheetRoute<T> extends PageRoute<T> {
+  static Widget Function(BuildContext context, Widget? content)? paddingBuilder;
+
   ModalSheetRoute({
     this.closeProgressThreshold,
     this.containerBuilder,
@@ -149,6 +117,7 @@ class ModalSheetRoute<T> extends PageRoute<T> {
     this.animationCurve,
     Duration? duration,
     super.settings,
+    super.fullscreenDialog = true,
   }) : duration = duration ?? _bottomSheetDuration;
 
   final double? closeProgressThreshold;
@@ -204,20 +173,16 @@ class ModalSheetRoute<T> extends PageRoute<T> {
       Animation<double> secondaryAnimation) {
     // By definition, the bottom sheet is aligned to the bottom of the page
     // and isn't exposed to the top padding of the MediaQuery.
-    Widget bottomSheet = MediaQuery.removePadding(
-      context: context,
-      // removeTop: true,
-      child: _ModalBottomSheet<T>(
-        closeProgressThreshold: closeProgressThreshold,
-        route: this,
-        secondAnimationController: secondAnimationController,
-        expanded: expanded,
-        bounce: bounce,
-        enableDrag: enableDrag,
-        animationCurve: animationCurve,
-      ),
+    Widget bottomSheet = _ModalBottomSheet<T>(
+      closeProgressThreshold: closeProgressThreshold,
+      route: this,
+      secondAnimationController: secondAnimationController,
+      expanded: expanded,
+      bounce: bounce,
+      enableDrag: enableDrag,
+      animationCurve: animationCurve,
     );
-    return bottomSheet;
+    return paddingBuilder?.call(context, bottomSheet) ?? bottomSheet;
   }
 
   @override

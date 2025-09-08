@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 typedef StatusBarGestureDetectorCallback = void Function(BuildContext context);
@@ -37,10 +39,11 @@ class _StatusBarGestureDetectorState extends State<StatusBarGestureDetector> {
     return OverlayPortal.targetsRootOverlay(
       controller: controller,
       overlayChildBuilder: (context) {
+        final useTop = math.min(view.padding.top, 50);
         return Align(
           alignment: Alignment.topCenter,
           child: SizedBox(
-            height: view.padding.top / view.devicePixelRatio,
+            height: useTop / view.devicePixelRatio,
             width: double.infinity,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
