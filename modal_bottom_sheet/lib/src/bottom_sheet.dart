@@ -375,14 +375,12 @@ class ModalBottomSheetState extends State<ModalBottomSheet>
                   ),
                 ),
               );
-        return ClipRect(
-          child: CustomSingleChildLayout(
-            delegate: _ModalBottomSheetLayout(
-              animationValue,
-              widget.expanded,
-            ),
-            child: draggableChild,
+        return CustomSingleChildLayout(
+          delegate: _ModalBottomSheetLayout(
+            animationValue,
+            widget.expanded,
           ),
+          child: draggableChild,
         );
       },
       child: RepaintBoundary(child: child),
